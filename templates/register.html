@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Register - AskScribe{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="auth-card">
+                    <div class="auth-header text-center mb-4">
+                        <i class="fas fa-scroll text-primary fs-1 mb-3"></i>
+                        <h2 class="fw-bold text-white">Join AskScribe</h2>
+                        <p class="text-muted">Create your account to get started</p>
+                    </div>
+                    
+                    <form method="POST" id="registerForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       required autocomplete="username" placeholder="Choose a username">
+                            </div>
+                            <div class="form-text text-muted">
+                                3-20 characters, letters and numbers only
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       required autocomplete="email" placeholder="Enter your email">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       required autocomplete="new-password" placeholder="Create a password">
+                            </div>
+                            <div class="form-text text-muted">
+                                Minimum 6 characters
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                       required autocomplete="new-password" placeholder="Confirm your password">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" required>
+                            <label class="form-check-label text-muted" for="terms">
+                                I agree to the <a href="#" class="text-primary">Terms of Service</a> 
+                                and <a href="#" class="text-primary">Privacy Policy</a>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </button>
+                    </form>
+                    
+                    <div class="auth-footer text-center">
+                        <p class="text-muted">
+                            Already have an account? 
+                            <a href="{{ url_for('login') }}" class="text-primary text-decoration-none">
+                                Sign in here
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto-focus username field
+document.getElementById('username').focus();
+
+// Form validation
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const terms = document.getElementById('terms').checked;
+    
+    let errors = [];
+    
+    // Username validation
+    if (!username || username.length < 3 || username.length > 20) {
+        errors.push('Username must be 3-20 characters long');
+    }
+    
+    if (!/^[a-zA-Z0-9]+$/.test(username)) {
+        errors.push('Username can only contain letters and numbers');
+    }
+    
+    // Email validation
+    if (!email || !isValidEmail(email)) {
+        errors.push('Please enter a valid email address');
+    }
+    
+    // Password validation
+    if (!password || password.length < 6) {
+        errors.push('Password must be at least 6 characters long');
+    }
+    
+    // Confirm password validation
+    if (password !== confirmPassword) {
+        errors.push('Passwords do not match');
+    }
+    
+    // Terms validation
+    if (!terms) {
+        errors.push('You must agree to the Terms of Service');
+    }
+    
+    if (errors.length > 0) {
+        e.preventDefault();
+        showAlert(errors.join('<br>'), 'error');
+    }
+});
+
+// Real-time password confirmation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = this.value;
+    
+    if (confirmPassword && password !== confirmPassword) {
+        this.classList.add('is-invalid');
+    } else {
+        this.classList.remove('is-invalid');
+    }
+});
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function showAlert(message, type) {
+    const existingAlert = document.querySelector('.alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.auth-card');
+    container.insertBefore(alertDiv, container.firstChild);
+}
+</script>
+{% endblock %}

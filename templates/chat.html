@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - AskScribe{% endblock %}
+
+{% block extra_head %}
+<meta name="current-session-id" content="{{ current_session.id }}">
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="container-fluid h-100">
+        <div class="row h-100">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="sidebar-content">
+                    <!-- New Chat Button -->
+                    <button class="btn btn-primary w-100 mb-3" id="newChatBtn">
+                        <i class="fas fa-plus me-2"></i>New Chat
+                    </button>
+                    
+                    <!-- Chat Sessions -->
+                    <div class="chat-sessions mb-4">
+                        <h6 class="text-muted mb-3">Recent Chats</h6>
+                        <div class="session-list">
+                            {% for session in chat_sessions %}
+                            <div class="session-item {% if session.id == current_session.id %}active{% endif %}" 
+                                 data-session-id="{{ session.id }}">
+                                <div class="session-info">
+                                    <div class="session-name">{{ session.session_name }}</div>
+                                    <div class="session-date text-muted">
+                                        {{ session.updated_at.strftime('%m/%d %H:%M') }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Documents -->
+                    <div class="documents-section">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-file-alt me-2"></i>Documents ({{ documents|length }})
+                        </h6>
+                        <div class="document-list">
+                            {% for doc in documents %}
+                            <div class="document-item" data-doc-id="{{ doc.id }}">
+                                <div class="document-info">
+                                    <i class="fas fa-file-{{ 'pdf' if doc.file_type == 'pdf' else 'alt' }} me-2"></i>
+                                    <span class="document-name" title="{{ doc.original_filename }}">
+                                        {{ doc.original_filename[:20] }}...
+                                    </span>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger delete-doc-btn" 
+                                        data-doc-id="{{ doc.id }}" title="Delete document">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if documents|length == 0 %}
+                            <div class="text-muted text-center py-3">
+                                <i class="fas fa-folder-open fa-2x mb-2"></i>
+                                <p>No documents uploaded</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Chat Area -->
+            <div class="col-md-9 col-lg-10 chat-main">
+                <div class="chat-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>{{ current_session.session_name }}
+                        </h4>
+                        <button class="btn btn-outline-primary" id="uploadBtn">
+                            <i class="fas fa-upload me-2"></i>Upload Documents
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages -->
+                <div class="chat-messages" id="chatMessages">
+                    {% if messages|length == 0 %}
+                    <div class="welcome-message text-center">
+                        <i class="fas fa-robot fa-3x text-primary mb-3"></i>
+                        <h3 class="text-white">Welcome to AskScribe!</h3>
+                        <p class="text-muted">
+                            Upload your documents and start asking questions to get intelligent, 
+                            context-aware answers powered by AI.
+                        </p>
+                        <div class="quick-tips mt-4">
+                            <h5 class="text-white mb-3">Quick Tips:</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="tip-card">
+                                        <i class="fas fa-upload text-primary"></i>
+                                        <span>Upload PDF, DOCX, or TXT files</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="tip-card">
+                                        <i class="fas fa-eye text-success"></i>
+                                        <span>OCR support for scanned documents</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="tip-card">
+                                        <i class="fas fa-question-circle text-warning"></i>
+                                        <span>Ask natural language questions</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="tip-card">
+                                        <i class="fas fa-lightbulb text-info"></i>
+                                        <span>Get structured, highlighted answers</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    {% for message in messages %}
+                    <div class="message {{ message.message_type }}-message">
+                        <div class="message-avatar">
+                            {% if message.message_type == 'user' %}
+                            <i class="fas fa-user"></i>
+                            {% else %}
+                            <i class="fas fa-robot"></i>
+                            {% endif %}
+                        </div>
+                        <div class="message-content">
+                            <div class="message-text">
+                                {% if message.message_type == 'assistant' %}
+                                    {{ message.content | safe }}
+                                {% else %}
+                                    {{ message.content }}
+                                {% endif %}
+                            </div>
+                            <div class="message-meta">
+                                {{ message.timestamp.strftime('%H:%M') }}
+                                {% if message.context_used and message.message_type == 'assistant' %}
+                                <span class="context-info">
+                                    <i class="fas fa-file-alt ms-2"></i>
+                                    Context from {{ (message.context_used | fromjson | length) }} documents
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <!-- Chat Input -->
+                <div class="chat-input">
+                    <form id="chatForm" class="d-flex">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="messageInput" 
+                                   placeholder="Ask a question about your documents..." 
+                                   autocomplete="off" {% if documents|length == 0 %}disabled{% endif %}>
+                            <button class="btn btn-primary" type="submit" id="sendBtn" 
+                                    {% if documents|length == 0 %}disabled{% endif %}>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                    {% if documents|length == 0 %}
+                    <div class="text-center mt-2">
+                        <small class="text-muted">Upload documents to start asking questions</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-upload me-2"></i>Upload Documents
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                        <h5>Drag & Drop Files Here</h5>
+                        <p class="text-muted">or click to browse</p>
+                        <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt" hidden>
+                        <div class="supported-formats mt-3">
+                            <small class="text-muted">
+                                Supported formats: PDF, DOCX, TXT (Max 16MB each)
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="upload-progress mt-3" id="uploadProgress" style="display: none;">
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div class="upload-status"></div>
+                </div>
+                
+                <div class="uploaded-files" id="uploadedFiles"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Global variables
+let currentSessionId = document.querySelector('meta[name="current-session-id"]').content;
+let isProcessing = false;
+
+// Initialize chat functionality
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChat();
+    initializeUpload();
+    initializeSidebar();
+});
+
+function initializeChat() {
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const chatMessages = document.getElementById('chatMessages');
+    
+    // Auto-scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Focus input
+    messageInput.focus();
+    
+    // Handle form submission
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+    
+    // Handle Enter key
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+}
+
+function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    
+    if (!message || isProcessing) return;
+    
+    // Add user message to chat
+    addMessage(message, 'user');
+    messageInput.value = '';
+    
+    // Show processing indicator
+    const processingDiv = addProcessingMessage();
+    isProcessing = true;
+    
+    // Send to backend
+    fetch('/ask', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            question: message,
+            session_id: currentSessionId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove processing indicator
+        processingDiv.remove();
+        
+        if (data.error) {
+            addMessage('Error: ' + data.error, 'assistant');
+        } else {
+            addMessage(data.answer, 'assistant', data.context_documents);
+        }
+    })
+    .catch(error => {
+        processingDiv.remove();
+        addMessage('Error: Failed to send message', 'assistant');
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        isProcessing = false;
+    });
+}
+
+function addMessage(content, type, contextDocs = null) {
+    const chatMessages = document.getElementById('chatMessages');
+    
+    // Remove welcome message if it exists
+    const welcomeMessage = chatMessages.querySelector('.welcome-message');
+    if (welcomeMessage) {
+        welcomeMessage.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}-message`;
+    
+    const avatar = type === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    let contextInfo = '';
+    if (contextDocs && contextDocs.length > 0) {
+        contextInfo = `<span class="context-info">
+            <i class="fas fa-file-alt ms-2"></i>
+            Context from ${contextDocs.length} documents
+        </span>`;
+    }
+    
+    messageDiv.innerHTML = `
+        <div class="message-avatar">${avatar}</div>
+        <div class="message-content">
+            <div class="message-text">${formatMessage(content)}</div>
+            <div class="message-meta">
+                ${time}
+                ${contextInfo}
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function addProcessingMessage() {
+    const chatMessages = document.getElementById('chatMessages');
+    const processingDiv = document.createElement('div');
+    processingDiv.className = 'message assistant-message processing';
+    processingDiv.innerHTML = `
+        <div class="message-avatar"><i class="fas fa-robot"></i></div>
+        <div class="message-content">
+            <div class="message-text">
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                Analyzing documents...
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(processingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    return processingDiv;
+}
+
+function formatMessage(content) {
+    // Convert markdown-like formatting to HTML
+    return content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+}
+
+function initializeUpload() {
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    uploadBtn.addEventListener('click', () => uploadModal.show());
+    
+    // Drag and drop
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', handleDragOver);
+    uploadArea.addEventListener('drop', handleDrop);
+    
+    fileInput.addEventListener('change', handleFileSelect);
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    e.currentTarget.classList.add('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    uploadFiles(files);
+}
+
+function handleFileSelect(e) {
+    const files = e.target.files;
+    uploadFiles(files);
+}
+
+function uploadFiles(files) {
+    if (files.length === 0) return;
+    
+    const formData = new FormData();
+    for (let file of files) {
+        formData.append('files', file);
+    }
+    
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = uploadProgress.querySelector('.progress-bar');
+    const uploadStatus = uploadProgress.querySelector('.upload-status');
+    
+    uploadProgress.style.display = 'block';
+    progressBar.style.width = '0%';
+    uploadStatus.textContent = 'Uploading files...';
+    
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        progressBar.style.width = '100%';
+        
+        if (data.error) {
+            uploadStatus.textContent = 'Error: ' + data.error;
+            uploadStatus.className = 'upload-status text-danger';
+        } else {
+            uploadStatus.textContent = `Successfully uploaded ${data.files.length} files`;
+            uploadStatus.className = 'upload-status text-success';
+            
+            // Refresh page to show new documents
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        }
+    })
+    .catch(error => {
+        progressBar.style.width = '100%';
+        progressBar.className = 'progress-bar bg-danger';
+        uploadStatus.textContent = 'Upload failed';
+        uploadStatus.className = 'upload-status text-danger';
+        console.error('Upload error:', error);
+    });
+}
+
+function initializeSidebar() {
+    // Session switching
+    document.querySelectorAll('.session-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const sessionId = this.dataset.sessionId;
+            if (sessionId !== currentSessionId) {
+                window.location.href = `/chat?session_id=${sessionId}`;
+            }
+        });
+    });
+    
+    // New chat button
+    document.getElementById('newChatBtn').addEventListener('click', function() {
+        fetch('/new_session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: 'New Chat' })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.session_id) {
+                window.location.href = `/chat?session_id=${data.session_id}`;
+            }
+        })
+        .catch(error => console.error('Error creating new session:', error));
+    });
+    
+    // Document deletion
+    document.querySelectorAll('.delete-doc-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const docId = this.dataset.docId;
+            
+            if (confirm('Are you sure you want to delete this document?')) {
+                deleteDocument(docId);
+            }
+        });
+    });
+}
+
+function deleteDocument(docId) {
+    fetch(`/delete_document/${docId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Failed to delete document');
+        }
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        alert('Failed to delete document');
+    });
+}
+</script>
+{% endblock %}

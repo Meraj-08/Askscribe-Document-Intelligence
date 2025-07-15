@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}AskScribe - Intelligent Document Analysis{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section bg-gradient-dark text-white">
+    <div class="container">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <h1 class="display-4 fw-bold mb-4">
+                        <i class="fas fa-brain text-primary me-3"></i>
+                        Intelligent Document Analysis
+                    </h1>
+                    <p class="lead mb-4">
+                        Upload multiple documents, ask natural language questions, and receive 
+                        <strong>context-aware, structured answers</strong> powered by AI.
+                    </p>
+                    
+                    <div class="feature-highlights mb-5">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="feature-item">
+                                    <i class="fas fa-file-alt text-success me-2"></i>
+                                    <span>Multi-Document Support</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="feature-item">
+                                    <i class="fas fa-eye text-info me-2"></i>
+                                    <span>OCR for Scanned PDFs</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="feature-item">
+                                    <i class="fas fa-search text-warning me-2"></i>
+                                    <span>RAG-Powered Search</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="feature-item">
+                                    <i class="fas fa-robot text-primary me-2"></i>
+                                    <span>Gemini AI Integration</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cta-buttons">
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-3">
+                            <i class="fas fa-rocket me-2"></i>Get Started
+                        </a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="hero-visual">
+                    <div class="demo-chat-container">
+                        <div class="demo-chat-header">
+                            <i class="fas fa-comments me-2"></i>
+                            AskScribe Chat
+                        </div>
+                        <div class="demo-chat-body">
+                            <div class="demo-message user-message">
+                                What are the key findings in the research papers?
+                            </div>
+                            <div class="demo-message ai-message">
+                                <strong>Key Research Findings:</strong><br>
+                                • <strong>Machine Learning</strong> accuracy improved by 23%<br>
+                                • <strong>Data Processing</strong> speed increased 2.5x<br>
+                                • <strong>User Satisfaction</strong> rose to 94%
+                            </div>
+                        </div>
+                        <div class="demo-chat-footer">
+                            <i class="fas fa-magic me-2"></i>
+                            Powered by AI
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<section class="features-section py-5 bg-dark">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center mb-5">
+                <h2 class="display-5 fw-bold text-white">Why Choose AskScribe?</h2>
+                <p class="lead text-muted">Advanced document intelligence for modern workflows</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon">
+                        <i class="fas fa-upload text-primary"></i>
+                    </div>
+                    <h4>Multi-Document Upload</h4>
+                    <p class="text-muted">
+                        Upload PDF, DOCX, and TXT files simultaneously. 
+                        Supports scanned documents with advanced OCR technology.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain text-success"></i>
+                    </div>
+                    <h4>Smart RAG Engine</h4>
+                    <p class="text-muted">
+                        Retrieval-Augmented Generation with FAISS vector search 
+                        ensures highly relevant and accurate responses.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card h-100">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments text-info"></i>
+                    </div>
+                    <h4>ChatGPT-Style Interface</h4>
+                    <p class="text-muted">
+                        Intuitive dark-themed chat interface with structured responses, 
+                        keyword highlighting, and session management.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="how-it-works py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center mb-5">
+                <h2 class="display-5 fw-bold text-white">How It Works</h2>
+                <p class="lead text-muted">Simple steps to unlock document intelligence</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="step-card text-center">
+                    <div class="step-number">1</div>
+                    <div class="step-icon">
+                        <i class="fas fa-file-upload"></i>
+                    </div>
+                    <h5>Upload Documents</h5>
+                    <p class="text-muted">Drag and drop your files or browse to select multiple documents</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="step-card text-center">
+                    <div class="step-number">2</div>
+                    <div class="step-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h5>AI Processing</h5>
+                    <p class="text-muted">OCR extraction, text chunking, and vector embedding generation</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="step-card text-center">
+                    <div class="step-number">3</div>
+                    <div class="step-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h5>Ask Questions</h5>
+                    <p class="text-muted">Type natural language questions about your document content</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="step-card text-center">
+                    <div class="step-number">4</div>
+                    <div class="step-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h5>Get Insights</h5>
+                    <p class="text-muted">Receive structured, context-aware answers with highlighted keywords</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section py-5 bg-gradient-primary">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h3 class="fw-bold text-white mb-2">Ready to Transform Your Document Workflow?</h3>
+                <p class="text-white-50 mb-0">
+                    Join thousands of users who trust AskScribe for intelligent document analysis
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-arrow-right me-2"></i>Start Free Today
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
