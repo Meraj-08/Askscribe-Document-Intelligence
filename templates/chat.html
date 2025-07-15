@@ -75,9 +75,25 @@
                         <h4 class="mb-0">
                             <i class="fas fa-comments me-2"></i>{{ current_session.session_name }}
                         </h4>
-                        <button class="btn btn-outline-primary" id="uploadBtn">
-                            <i class="fas fa-upload me-2"></i>Upload Documents
+                        <button class="btn btn-outline-primary btn-sm" id="toggleUploadBtn">
+                            <i class="fas fa-upload me-2"></i>Upload Files
                         </button>
+                    </div>
+                </div>
+                
+                <!-- File Upload Section -->
+                <div class="file-upload-section" id="fileUploadSection" style="display: none;">
+                    <div class="upload-dropzone" id="uploadDropzone">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h6 class="mb-2">Drag & Drop Files Here</h6>
+                            <p class="text-muted mb-2">or click to browse</p>
+                            <input type="file" id="fileInputNew" multiple accept=".pdf,.docx,.txt" hidden>
+                            <small class="text-muted">
+                                Supports PDF, DOCX, TXT • Max 16MB each • OCR enabled
+                            </small>
+                        </div>
+                        <div class="upload-files-list" id="uploadFilesList"></div>
                     </div>
                 </div>
                 
@@ -231,6 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeChat();
     initializeUpload();
     initializeSidebar();
+    initializeNewUpload();
 });
 
 function initializeChat() {
@@ -238,8 +255,10 @@ function initializeChat() {
     const messageInput = document.getElementById('messageInput');
     const chatMessages = document.getElementById('chatMessages');
     
-    // Auto-scroll to bottom
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    // Auto-scroll to bottom with smooth behavior
+    setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 100);
     
     // Focus input
     messageInput.focus();
@@ -259,6 +278,121 @@ function initializeChat() {
     });
 }
 
+function initializeNewUpload() {
+    const toggleBtn = document.getElementById('toggleUploadBtn');
+    const uploadSection = document.getElementById('fileUploadSection');
+    const dropzone = document.getElementById('uploadDropzone');
+    const fileInput = document.getElementById('fileInputNew');
+    const filesList = document.getElementById('uploadFilesList');
+    
+    // Toggle upload section
+    toggleBtn.addEventListener('click', function() {
+        const isVisible = uploadSection.style.display !== 'none';
+        uploadSection.style.display = isVisible ? 'none' : 'block';
+        toggleBtn.innerHTML = isVisible ? 
+            '<i class="fas fa-upload me-2"></i>Upload Files' : 
+            '<i class="fas fa-times me-2"></i>Close Upload';
+    });
+    
+    // Dropzone functionality
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', handleDragOver);
+    dropzone.addEventListener('dragleave', handleDragLeave);
+    dropzone.addEventListener('drop', handleDrop);
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    function handleDragOver(e) {
+        e.preventDefault();
+        dropzone.classList.add('drag-over');
+    }
+    
+    function handleDragLeave(e) {
+        e.preventDefault();
+        dropzone.classList.remove('drag-over');
+    }
+    
+    function handleDrop(e) {
+        e.preventDefault();
+        dropzone.classList.remove('drag-over');
+        const files = Array.from(e.dataTransfer.files);
+        processFiles(files);
+    }
+    
+    function handleFileSelect(e) {
+        const files = Array.from(e.target.files);
+        processFiles(files);
+    }
+    
+    function processFiles(files) {
+        files.forEach(file => {
+            if (validateFile(file)) {
+                uploadFile(file);
+            }
+        });
+    }
+    
+    function validateFile(file) {
+        const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+        const maxSize = 16 * 1024 * 1024; // 16MB
+        
+        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|docx|txt)$/i)) {
+            showAlert('Unsupported file type. Please upload PDF, DOCX, or TXT files.', 'error');
+            return false;
+        }
+        
+        if (file.size > maxSize) {
+            showAlert('File too large. Maximum size is 16MB.', 'error');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Add file tag to UI
+        const fileTag = createFileTag(file.name);
+        filesList.appendChild(fileTag);
+        
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(`${file.name} uploaded successfully!`, 'success');
+                fileTag.classList.add('success');
+            } else {
+                showAlert(data.error || 'Upload failed', 'error');
+                fileTag.remove();
+            }
+        })
+        .catch(error => {
+            showAlert('Upload failed', 'error');
+            fileTag.remove();
+        });
+    }
+    
+    function createFileTag(fileName) {
+        const tag = document.createElement('div');
+        tag.className = 'uploaded-file-tag';
+        tag.innerHTML = `
+            <i class="fas fa-file"></i>
+            <span>${fileName}</span>
+            <i class="fas fa-times remove-file"></i>
+        `;
+        
+        tag.querySelector('.remove-file').addEventListener('click', () => {
+            tag.remove();
+        });
+        
+        return tag;
+    }
+}
+
 function sendMessage() {
     const messageInput = document.getElementById('messageInput');
     const message = messageInput.value.trim();
@@ -269,8 +403,8 @@ function sendMessage() {
     addMessage(message, 'user');
     messageInput.value = '';
     
-    // Show processing indicator
-    const processingDiv = addProcessingMessage();
+    // Show typing indicator
+    const typingDiv = addTypingIndicator();
     isProcessing = true;
     
     // Send to backend
@@ -286,18 +420,18 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
-        // Remove processing indicator
-        processingDiv.remove();
+        // Remove typing indicator
+        typingDiv.remove();
         
         if (data.error) {
-            addMessage('Error: ' + data.error, 'assistant');
+            addMessageWithTyping('Error: ' + data.error, 'assistant');
         } else {
-            addMessage(data.answer, 'assistant', data.context_documents);
+            addMessageWithTyping(data.answer, 'assistant', data.context_documents);
         }
     })
     .catch(error => {
-        processingDiv.remove();
-        addMessage('Error: Failed to send message', 'assistant');
+        typingDiv.remove();
+        addMessageWithTyping('Error: Failed to send message', 'assistant');
         console.error('Error:', error);
     })
     .finally(() => {
@@ -512,6 +646,142 @@ function deleteDocument(docId) {
         console.error('Delete error:', error);
         alert('Failed to delete document');
     });
+}
+
+// Enhanced typing indicator and message functions
+function addTypingIndicator() {
+    const chatMessages = document.getElementById('chatMessages');
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'typing-message';
+    typingDiv.innerHTML = `
+        <div class="message-avatar">
+            <i class="fas fa-robot"></i>
+        </div>
+        <div class="typing-indicator">
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+            <span style="margin-left: 0.5rem; color: #888;">AskScribe is thinking...</span>
+        </div>
+    `;
+    
+    chatMessages.appendChild(typingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    return typingDiv;
+}
+
+function addMessageWithTyping(content, type, contextDocs = null) {
+    const chatMessages = document.getElementById('chatMessages');
+    
+    // Remove welcome message if it exists
+    const welcomeMessage = chatMessages.querySelector('.welcome-message');
+    if (welcomeMessage) {
+        welcomeMessage.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}-message`;
+    
+    const timestamp = new Date().toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    
+    const avatar = type === 'user' ? 
+        '<i class="fas fa-user"></i>' : 
+        '<i class="fas fa-robot"></i>';
+    
+    const contextInfo = contextDocs && contextDocs.length > 0 ? 
+        `<span class="context-info">
+            <i class="fas fa-file-alt ms-2"></i>
+            Context from ${contextDocs.length} documents
+        </span>` : '';
+    
+    messageDiv.innerHTML = `
+        <div class="message-avatar">${avatar}</div>
+        <div class="message-content">
+            <div class="message-text">
+                <div class="message-content-text"></div>
+            </div>
+            <div class="message-meta">
+                ${timestamp}
+                ${contextInfo}
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    
+    // Apply typing effect for assistant messages
+    if (type === 'assistant') {
+        typeText(messageDiv.querySelector('.message-content-text'), enhanceContent(content));
+    } else {
+        messageDiv.querySelector('.message-content-text').innerHTML = content;
+    }
+    
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function typeText(element, text, speed = 20) {
+    element.innerHTML = '';
+    let i = 0;
+    
+    function type() {
+        if (i < text.length) {
+            element.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(type, speed);
+            
+            // Auto-scroll as text appears
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    }
+    
+    type();
+}
+
+function enhanceContent(content) {
+    // Highlight important keywords and enhance formatting
+    return content
+        .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-important">$1</span>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code style="background: rgba(255,193,7,0.2); padding: 0.1rem 0.3rem; border-radius: 3px;">$1</code>')
+        .replace(/(\b(?:formula|equation|algorithm|model|method|approach|technique|accuracy|precision|recall|gradient|loss|function|optimization|neural|network|learning|rate|epoch|batch|validation|training|testing|classification|regression|clustering|supervised|unsupervised|reinforcement)\b)/gi, '<span class="highlight-keyword">$1</span>')
+        .replace(/\n/g, '<br>');
+}
+
+// Override the existing addMessage function for backwards compatibility
+const originalAddMessage = addMessage;
+addMessage = function(content, type, contextDocs = null) {
+    if (type === 'assistant') {
+        addMessageWithTyping(content, type, contextDocs);
+    } else {
+        originalAddMessage(content, type, contextDocs);
+    }
+};
+
+// Show alert function
+function showAlert(message, type = 'info', duration = 4000) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, duration);
 }
 </script>
 {% endblock %}
