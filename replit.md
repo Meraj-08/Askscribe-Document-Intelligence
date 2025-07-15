@@ -28,15 +28,15 @@ Preferred communication style: Simple, everyday language.
 ## Key Components
 
 ### Document Processing Pipeline
-- **Text Extraction**: Supports PDF (PyMuPDF), DOCX, and TXT files
-- **OCR Fallback**: Tesseract OCR for scanned PDFs with minimal text
-- **Text Chunking**: RecursiveCharacterTextSplitter (1000 chars, 200 overlap)
-- **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2, 384 dimensions)
+- **Text Extraction**: Full support for PDF (PyMuPDF), DOCX (python-docx), and TXT files
+- **OCR Support**: Automatic Tesseract OCR for scanned PDFs with minimal text
+- **Text Chunking**: Simple text splitter (1000 chars, 200 overlap)
+- **Embeddings**: Custom TF-IDF implementation for lightweight vector search
 
 ### RAG Engine
-- **Vector Store**: FAISS IndexFlatIP for cosine similarity search
-- **Persistence**: Binary index storage with pickle mapping
-- **Retrieval**: Context-aware document chunk retrieval
+- **Vector Store**: Simple TF-IDF-based similarity search
+- **Persistence**: JSON-based index storage with document mappings
+- **Retrieval**: Context-aware document chunk retrieval using cosine similarity
 - **Generation**: Structured prompting with Gemini AI
 
 ### Authentication System
@@ -68,8 +68,8 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### AI Services
-- **Google Gemini API**: Primary LLM for answer generation
-- **Sentence Transformers**: Local embedding model for vector search
+- **Google Gemini API**: Primary LLM for answer generation with 2.5 Flash model
+- **Custom TF-IDF**: Lightweight text similarity without external ML dependencies
 
 ### Document Processing
 - **PyMuPDF (fitz)**: PDF text extraction and rendering
@@ -78,8 +78,8 @@ Preferred communication style: Simple, everyday language.
 - **Pillow**: Image processing for OCR pipeline
 
 ### Vector Database
-- **FAISS**: Facebook AI Similarity Search for vector indexing
-- **NumPy**: Numerical operations for embeddings
+- **Custom Implementation**: Simple TF-IDF-based text similarity for lightweight operation
+- **JSON Storage**: Persistent document embeddings and chunk mappings
 
 ### Web Framework
 - **Flask**: Core web framework with extensions

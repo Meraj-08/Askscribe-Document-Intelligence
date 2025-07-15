@@ -1,6 +1,11 @@
 import os
 import logging
 from typing import List, Optional
+import fitz  # PyMuPDF
+from docx import Document as DocxDocument
+import pytesseract
+from PIL import Image
+import io
 
 # Simple text splitter implementation
 class SimpleTextSplitter:
@@ -63,24 +68,72 @@ class DocumentProcessor:
             raise
     
     def _extract_from_pdf(self, file_path: str) -> str:
-        """Extract text from PDF (simplified version - text-based PDFs only)"""
+        """Extract text from PDF with OCR fallback for scanned documents"""
         try:
-            # For now, return a placeholder message
-            # This will be enhanced once we add PDF libraries
-            return "PDF processing not yet available. Please upload TXT or DOCX files for now."
+            # Open PDF with PyMuPDF
+            doc = fitz.open(file_path)
+            text = ""
+            
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                
+                # First try to extract text directly
+                page_text = page.get_text()
+                
+                # If very little text found, use OCR
+                if len(page_text.strip()) < 50:
+                    logging.info(f"Page {page_num + 1} has minimal text, using OCR")
+                    
+                    # Get page as image
+                    pix = page.get_pixmap()
+                    img_data = pix.tobytes("png")
+                    
+                    # Convert to PIL Image
+                    image = Image.open(io.BytesIO(img_data))
+                    
+                    # Use OCR to extract text
+                    ocr_text = pytesseract.image_to_string(image)
+                    text += f"\n--- Page {page_num + 1} (OCR) ---\n{ocr_text}\n"
+                else:
+                    text += f"\n--- Page {page_num + 1} ---\n{page_text}\n"
+            
+            doc.close()
+            
+            if not text.strip():
+                raise ValueError("No text could be extracted from PDF")
+            
+            return text.strip()
+            
         except Exception as e:
-            logging.error(f"PDF processing error: {e}")
-            raise
+            logging.error(f"PDF extraction failed: {e}")
+            raise ValueError(f"Failed to extract text from PDF: {str(e)}")
     
     def _extract_from_docx(self, file_path: str) -> str:
-        """Extract text from DOCX file (simplified version)"""
+        """Extract text from DOCX file"""
         try:
-            # For now, return a placeholder message
-            # This will be enhanced once we add docx libraries
-            return "DOCX processing not yet available. Please upload TXT files for now."
+            doc = DocxDocument(file_path)
+            text = ""
+            
+            for paragraph in doc.paragraphs:
+                if paragraph.text.strip():
+                    text += paragraph.text + "\n"
+            
+            # Extract text from tables
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        if cell.text.strip():
+                            text += cell.text + " "
+                    text += "\n"
+            
+            if not text.strip():
+                raise ValueError("No text could be extracted from DOCX")
+            
+            return text.strip()
+            
         except Exception as e:
-            logging.error(f"DOCX processing error: {e}")
-            raise
+            logging.error(f"DOCX extraction failed: {e}")
+            raise ValueError(f"Failed to extract text from DOCX: {str(e)}")
     
     def _extract_from_txt(self, file_path: str) -> str:
         """Extract text from TXT file"""
