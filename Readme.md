@@ -132,11 +132,17 @@ Real-time Q&A → History stored per session → View or continue previous chats
 
 ---
 
-## 🔁 Data Flow (Mermaid)
+## 🔁 Data Flow
 
 ```mermaid
-  flowchart TD
-  %% Authentication Flow A1[👤 User Registers / Logs In] --> A2[🔐 Flask-Login Handles Session] A2 --> A3{✅ Authenticated?} A3 -- Yes --> A4[🔓 Access Dashboard] A3 -- No --> A5[🚫 Redirect to Login] %% Document Upload Pipeline B1[📤 Upload PDF / DOCX / TXT] --> B2{📄 Contains Text?} B2 -- Yes --> B3[📝 Extract Text via Parser] B2 -- No --> B4[🖼️ Run Tesseract OCR] B3 & B4 --> B5[📦 Chunk Text (1000 char, 200 overlap)] B5 --> B6[🧠 Generate TF-IDF Embeddings] B6 --> B7[💾 Store in FAISS Index + Metadata DB] %% Question-Answering Flow C1[❓ User Asks Question] --> C2[🔍 Search Relevant Chunks (FAISS)] C2 --> C3[📋 Construct Prompt with Context] C3 --> C4[🤖 Gemini API Generates Answer] C4 --> C5[💬 Display Answer in Chat UI] C5 --> C6[🗂️ Save Chat Message to DB] %% Session Management A4 --> D1[🆕 Create or Select Chat Session] D1 --> C1 %% Visual Connections A4 --> B1
+flowchart TD
+  A[User Uploads Document] --> B[Text Extraction + OCR]
+  B --> C[Chunking & Embedding]
+  C --> D[FAISS Vector Storage]
+  D --> E[Ask Question]
+  E --> F[Relevant Chunks Retrieved]
+  F --> G[Prompt Sent to Gemini AI]
+  G --> H[Response Returned to User]
 ```
 
 ---
