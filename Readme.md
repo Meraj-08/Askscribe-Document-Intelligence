@@ -77,14 +77,78 @@ Visit `http://localhost:5000` in your browser.
 
 ## 🧠 How It Works
 
-1. **Document Upload**  
-   Users upload files → Extract content → Chunk → Generate TF-IDF embeddings → Store with FAISS
+### 📂 Document Upload  
+Users upload files → Extract content → Chunk → Generate TF-IDF embeddings → Store with FAISS
 
-2. **Question Answering**  
-   User asks question → Retrieve top relevant chunks → Construct prompt → Gemini generates answer
+### ❓ Question Answering  
+User asks question → Retrieve top relevant chunks → Construct prompt → Gemini generates answer
 
-3. **Chat Interface**  
-   Real-time Q&A → History stored per session → View or continue previous chats
+### 💬 Chat Interface  
+Real-time Q&A → History stored per session → View or continue previous chats
+
+---
+
+## 🧰 System Architecture
+
+### 🎨 Frontend Architecture
+- **Framework**: Bootstrap 5.3.2 with dark theme  
+- **Styling**: Custom CSS with ChatGPT-inspired dark interface  
+- **JavaScript**: Vanilla JS with Bootstrap components  
+- **Templates**: Jinja2 templating engine  
+- **Features**: Responsive design, file upload validation, real-time chat interface  
+
+### 🧰 Backend Architecture
+- **Framework**: Flask with SQLAlchemy ORM  
+- **Authentication**: Flask-Login for session management  
+- **Database**: SQLite (configurable via DATABASE_URL)  
+- **File Processing**: Multi-format document processing with OCR  
+- **AI Integration**: Google Gemini 2.5 Flash model  
+- **Vector Search**: FAISS for efficient similarity search  
+
+---
+
+## 🔍 Key Components
+
+### 📄 Document Processing Pipeline
+- **Text Extraction**: Full support for PDF (PyMuPDF), DOCX, and TXT  
+- **OCR**: Automatic Tesseract fallback for scanned documents  
+- **Chunking**: 1000-char chunks with 200-char overlap  
+- **Embeddings**: Custom TF-IDF embeddings (lightweight)  
+
+### ⚙️ RAG Engine
+- **Vector Store**: JSON-based TF-IDF + FAISS similarity  
+- **Retrieval**: Cosine similarity for top-matching chunks  
+- **LLM Generation**: Prompt engineering with Gemini AI  
+
+### 🔐 Authentication
+- **User System**: Registration, login, logout  
+- **Session Handling**: Secure cookie-based sessions with Flask-Login  
+- **Protected Routes**: Auth-required pages  
+
+### 💬 Chat System
+- **Session Support**: Multi-chat session per user  
+- **Chat History**: Stored persistently in database  
+- **Contextual Q&A**: Gemini answers are always based on document context  
+
+---
+
+## 🔁 Data Flow (Mermaid)
+
+```mermaid
+flowchart TD
+  A[User Uploads Document] --> B[Text Extraction + OCR]
+  B --> C[Chunking & Embedding]
+  C --> D[FAISS Vector Storage]
+  D --> E[Ask Question]
+  E --> F[Relevant Chunks Retrieved]
+  F --> G[Prompt Sent to Gemini AI]
+  G --> H[Response Returned to User]
+```
+
+<pre> 
+  ```mermaid flowchart TD %% Authentication Flow A1[👤 User Registers / Logs In] --> A2[🔐 Flask-Login Handles Session] A2 --> A3{✅ Authenticated?} A3 -- Yes --> A4[🔓 Access Dashboard] A3 -- No --> A5[🚫 Redirect to Login] %% Document Upload Pipeline B1[📤 Upload PDF / DOCX / TXT] --> B2{📄 Contains Text?} B2 -- Yes --> B3[📝 Extract Text via Parser] B2 -- No --> B4[🖼️ Run Tesseract OCR] B3 & B4 --> B5[📦 Chunk Text (1000 char, 200 overlap)] B5 --> B6[🧠 Generate TF-IDF Embeddings] B6 --> B7[💾 Store in FAISS Index + Metadata DB] %% Question-Answering Flow C1[❓ User Asks Question] --> C2[🔍 Search Relevant Chunks (FAISS)] C2 --> C3[📋 Construct Prompt with Context] C3 --> C4[🤖 Gemini API Generates Answer] C4 --> C5[💬 Display Answer in Chat UI] C5 --> C6[🗂️ Save Chat Message to DB] %% Session Management A4 --> D1[🆕 Create or Select Chat Session] D1 --> C1 %% Visual Connections A4 --> B1 ``` </pre>
+
+---
 
 ---
 
